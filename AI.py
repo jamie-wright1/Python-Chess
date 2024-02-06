@@ -1,35 +1,10 @@
 import functions as funcs
-import random as rand
+import random
 import boardFunctions
 from icecream import ic
 import time
 
 class parameters:
-    
-    #Temporary until depth
-    def allowsTake(move, board, color):
-        newBoard = board[::]
-        newBoard = boardFunctions.boardFuncs.updateBoard(move, newBoard)
-        if color == 8:
-            attacked = funcs.allFuncs.potentialSight(newBoard, 16)
-        else:
-            attacked = funcs.allFuncs.potentialSight(newBoard, 8)
-
-        for moveInfo in attacked:
-            if move.movePosition == moveInfo.movePosition:
-                return True
-       
-        return False
-    
-    allowsTakeValue = (-4, -4, -4)
-
-    def goodTrade(move):
-        value = parameters.calculatePieceValue(move.pieceTaken) - parameters.calculatePieceValue(move.pieceMoving)
-        return value
-    
-
-    goodTradeValue = (3, 3, 3)
-
     def towardsMiddle(board):
         favorability = 0
 
@@ -42,67 +17,6 @@ class parameters:
 
         return favorability
             
-        
-    towardsMiddleValue = (4, 4, 3)
-
-    undefendedTakeValue = (4, 4, 4)
-
-    def defended(move, board, color):
-        newBoard = board[::]
-        newBoard = boardFunctions.boardFuncs.updateBoard(move, newBoard)
-        newBoard[move.movePosition] = 0
-
-        if color == 8:
-            defended = funcs.allFuncs.potentialSight(newBoard, 8)
-        else:
-            defended = funcs.allFuncs.potentialSight(newBoard, 16)
-
-        for moveInfo in defended:
-            if move.movePosition == moveInfo.movePosition:
-                return True
-       
-        return False
-
-
-    defendedValue = (10, 10, 10)
-
-    def kingMove(move):
-        return move.pieceMoving == 14 or move.pieceMoving == 22
-
-    kingMoveValue = (-3, -3, 0)
-
-    def pawnPush(move):
-        return move.pieceMoving == 9 or move.pieceMoving == 17
-
-    pawnPushValue = (2, 2, 0)
-
-    def pawnPromotion(move):
-        return (move.movePosition < 8 and move.pieceMoving == 9) or (move.movePosition > 55 and move.pieceMoving == 17)
-
-    pawnPromotionValue = (80, 80, 80)
-
-    def putsInCheck(move, board):
-        newBoard = board[::]
-        newBoard = boardFunctions.boardFuncs.updateBoard(move, newBoard)
-
-        return funcs.allFuncs.IsInCheck(move.pieceMoving, newBoard)
-
-
-    putsInCheckValue = (5, 10, 15)
-
-    def putsInCheckmate(move, board):
-        True
-
-    putsInCheckMateValue = (1000, 1000, 1000)
-    
-    castleValue = (30, 15, 10)
-
-    phases = int
-
-    isTradeValue = (10, 15, 20)
-
-    isWinning = (True, False)
-
     def calculatePieceValue(piece):
         value = int
         match piece:
@@ -121,7 +35,6 @@ class parameters:
 
         return value
     
-
     def kingStayPut(board):
         for i, square in enumerate(board):
             if square == 14:
@@ -144,11 +57,10 @@ class parameters:
 
         return favorability
 
-
     def calculateFavorability(board):
         favorability = 0
 
-        favorability+= simpleEvaluation(board)
+        favorability+= 10*simpleEvaluation(board)
         favorability+= parameters.towardsMiddle(board)
         favorability+= parameters.kingStayPut(board)
         favorability+= parameters.pawnsAdvanced(board)
@@ -158,9 +70,6 @@ class parameters:
 
         if funcs.allFuncs.IsInCheck(16, board) == True:
             favorability -= 20
-
-        #if parameters.defended(move, board) == True:
-         #   favorability += parameters.defendedValue[phase]
 
         return favorability
 
@@ -212,83 +121,78 @@ def executeAIMove(board, moveToMake):
         #for move in moveToMake.moveInfos:
          #   board[move[0]] = moveToMake.pieceMoving + 4
     #else:
-    board[moveToMake.movePosition] = board[moveToMake.starPosition]
+    board[moveToMake.movePosition] = board[moveToMake.startPosition]
     board[moveToMake.startPosition] = 0
 
-def minimax(board, possibleMoves, maxDepth):
-    moveToPlay = tuple()
-    best = 99
+def minimax(board, possibleMoves, depth):
+    bestMove = None
+    alpha, beta = -99, 99
 
     possibleMoves = funcs.allFuncs.colorSight(board, 8)
-    ic(possibleMoves)
     newOrder = moveOrdering(board, possibleMoves, 16)
-    ic(newOrder)
     
     
-    for move in possibleMoves:
-        boardCopy = board[::]
-        boardCopy = boardFunctions.boardFuncs.updateBoard(move, board[move.startPosition], move.startPosition, boardCopy)
+    for move in newOrder:
+        savePiece = boardFunctions.boardFuncs.updateBoard(move, board)
+        v = max(board, alpha, beta, depth-1)
+        boardFunctions.boardFuncs.undoMove(move, board, savePiece)
 
-        v = max(boardCopy, best, 0, maxDepth)
+        if v <= alpha:
+            return move
+        
+        if v < beta:
+            beta = v
+            bestMove = move
 
-        if v < best:
-            best = v
-            moveToPlay = move
+    return bestMove
 
-    return moveToPlay
-
-def max(board, prune, depth, maxDepth):
+def max(board, alpha, beta, depth):
     if funcs.allFuncs.gameOver(board) == True:
         return funcs.allFuncs.utility(board)
     
-    if depth == maxDepth:
+    if depth == 0:
         return parameters.calculateFavorability(board)
-    
-    best = -99
 
     possibleMoves = funcs.allFuncs.colorSight(board, 16)
+    newOrder = moveOrdering(board, possibleMoves, 8)
     
-    for move in possibleMoves:
-        boardCopy = board[::]
-        boardCopy = boardFunctions.boardFuncs.updateBoard(move, board[move.startPosition], move.startPosition, boardCopy)
+    for move in newOrder:
+        savePiece = boardFunctions.boardFuncs.updateBoard(move, board)
+        v = min(board, alpha, beta, depth-1)
+        boardFunctions.boardFuncs.undoMove(move, board, savePiece)
 
-        v = min(boardCopy, best, depth+1, maxDepth)
-
-        if v >= prune:
+        if v >= beta:
             return v
         
-        if v > best:
-            best = v
-        
-    return best
+        if v > alpha:
+            alpha = v
 
-def min(board, prune, depth, maxDepth):
+    return alpha
+
+def min(board, alpha, beta, depth):
     if funcs.allFuncs.gameOver(board) == True:
         return funcs.allFuncs.utility(board)
     
 
-    if depth == maxDepth:
+    if depth == 0:
         return parameters.calculateFavorability(board)
 
-    best = 99
         
     possibleMoves = funcs.allFuncs.colorSight(board, 8)
+    newOrder = moveOrdering(board, possibleMoves, 16)
 
+    for move in newOrder:
+        savePiece = boardFunctions.boardFuncs.updateBoard(move, board)
+        v = max(board, alpha, beta, depth-1)
+        boardFunctions.boardFuncs.undoMove(move, board, savePiece)
 
-    for move in possibleMoves:
-
-        boardCopy = board[::]
-        boardCopy = boardFunctions.boardFuncs.updateBoard(move, board[move.startPosition], move.startPosition, boardCopy)
-
-        v = max(boardCopy, best, depth+1, maxDepth)
-
-        if v <= prune:
+        if v <= alpha:
             return v
         
-        if v < best:
-            best = v
+        if v < beta:
+            beta = v
 
-    return best
+    return beta
 
 def moveOrdering(board, possibleMoves, color):
     newList = []
@@ -296,7 +200,6 @@ def moveOrdering(board, possibleMoves, color):
     for i in range(6, 0, -1):
         for move in possibleMoves:
                 if board[move.movePosition] == (i + color):
-                    ic("Appended")
                     newList.append(move)
 
     for move in possibleMoves:

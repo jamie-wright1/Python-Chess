@@ -58,11 +58,17 @@ class boardFuncs:
     def boardToFen(board):
         True
 
-    def updateBoard(move, piece, position, board):
-        board[move[0]] = piece
-        board[position] = 0
+    def updateBoard(move, board):
+        savePiece = board[move[1]]
+
+        board[move[1]] = board[move[0]]
+        board[move[0]] = 0
         
-        return board
+        return savePiece
+    
+    def undoMove(move, board, savedPiece):
+        board[move[0]] = board[move[1]]
+        board[move[1]] = savedPiece
     
     def placePieces():
         board = []

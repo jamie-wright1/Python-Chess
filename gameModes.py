@@ -48,6 +48,13 @@ def turn(color, board):
                             #board[placeCoor] = pieceInfo.pieceMoving + 4
                         board[placeCoor] = pieceMoving
 
+                        startPosition = -1
+                        pieceMoving= -1
+                        pieceSight = []
+                        coordinates = (0, 0)
+
+                        ui.drawBoard(ui.WIN, board, coordinates, startPosition, pieceMoving, pieceSight)
+
                         return board
                     
                 board[startPosition] = pieceMoving

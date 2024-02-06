@@ -58,7 +58,7 @@ class PieceImages:
     WHITEPAWN = game.image.load('chessPieces/whitePieces/whitePawn.png')
     WHITEPAWN = game.transform.scale(WHITEPAWN, PIECESIZE)
 
-def drawBoard(surface, board, coordinates, moveInfo, possibleMoves):
+def drawBoard(surface, board, coordinates, startPosition, pieceMoving, possibleMoves):
     coordinates = (coordinates[0]-37.5, coordinates[1] - 37.5)
 
     surface.fill(BoardColors.WHITE)
@@ -71,16 +71,16 @@ def drawBoard(surface, board, coordinates, moveInfo, possibleMoves):
         if i % 8 == 7:
             g+=1
 
-    if moveInfo.pieceMoving != -1:
-        xSquare = moveInfo.startPosition % 8
-        ySquare = int(moveInfo.startPosition / 8)
+    if pieceMoving != -1:
+        xSquare = startPosition % 8
+        ySquare = int(startPosition / 8)
 
         draw = (75*(xSquare), 525-75*ySquare)
         surface.blit(BoardColors.BASESQUARE, draw)      
 
-    for moves in possibleMoves:
-        xSquare = moves.movePosition % 8
-        ySquare = int(moves.movePosition / 8)
+    for move in possibleMoves:
+        xSquare = move.movePosition % 8
+        ySquare = int(move.movePosition / 8)
 
         surface.blit(BoardColors.HIGHLIGHTEDSQUARE, (75*(xSquare), 525-75*ySquare))
 
@@ -123,8 +123,8 @@ def drawBoard(surface, board, coordinates, moveInfo, possibleMoves):
             y-=75
             x=0
     
-    if moveInfo.pieceMoving != - 1:
-        match moveInfo.pieceMoving:
+    if pieceMoving != - 1:
+        match pieceMoving:
 
             case 0:
                 True

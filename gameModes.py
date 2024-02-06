@@ -13,9 +13,8 @@ def turn(color, board):
     mouseDown = False
     coordinates = (0, 0)
     pieceSight = []
-    moveInfo = func.move()
-    moveInfo.colorOfMover =  color
-
+    startPosition = -1
+    pieceMoving = -1
 
     clock = game.time.Clock()
 
@@ -29,32 +28,31 @@ def turn(color, board):
                 coordinates = event.pos[0], event.pos[1]
 
                 if mouseDown == False:
-                    moveInfo.startPosition = int(coordinates[0]/75 + 1) + 8*(7 - int(coordinates[1]/75)) - 1
-                    moveInfo.pieceMoving = board[moveInfo.startPosition]
+                    startPosition = int(coordinates[0]/75 + 1) + 8*(7 - int(coordinates[1]/75)) - 1
+                    pieceMoving = board[startPosition]
 
-                    if 0 < moveInfo.pieceMoving - moveInfo.colorOfMover <= 6:
+                    if 0 < pieceMoving - color <= 6:
                         mouseDown = True
-                        pieceSight = funcs.validMoves(moveInfo.pieceMoving, moveInfo.startPosition, board)
-                        board[moveInfo.startPosition] = 0
+                        pieceSight = funcs.validMoves(pieceMoving, startPosition, board)
+                        board[startPosition] = 0
                     else:
-                        moveInfo.startPosition = -1
-                        moveInfo.pieceMoving= -1
+                        startPosition = -1
+                        pieceMoving= -1
             elif mouseDown == True:
                 coordinates = (event.pos[0], event.pos[1])
-                moveInfo.movePosition = int(coordinates[0]/75 + 1) + 8*(7 - int(coordinates[1]/75)) - 1
+                placeCoor = int(coordinates[0]/75 + 1) + 8*(7 - int(coordinates[1]/75)) - 1
 
                 for move in pieceSight:
-                    if moveInfo.movePosition == move.movePosition:
-                        if move.isPromotion == True:
-                            board[moveInfo.movePosition] = moveInfo.pieceMoving + 4
-                        else:
-                            board[moveInfo.movePosition] = moveInfo.pieceMoving
+                    if placeCoor == move.movePosition:
+                        #if move.isPromotion == True:
+                            #board[placeCoor] = pieceInfo.pieceMoving + 4
+                        board[placeCoor] = pieceMoving
 
                         return board
                     
-                board[moveInfo.startPosition] = moveInfo.pieceMoving
-                moveInfo.startPosition = -1
-                moveInfo.pieceMoving= -1
+                board[startPosition] = pieceMoving
+                startPosition = -1
+                pieceMoving= -1
                 mouseDown = False
                 pieceSight = []
                 coordinates = (0, 0)
@@ -62,7 +60,7 @@ def turn(color, board):
             if event.type == game.QUIT:
                 quit()
     
-        ui.drawBoard(ui.WIN, board, coordinates, moveInfo, pieceSight)
+        ui.drawBoard(ui.WIN, board, coordinates, startPosition, pieceMoving, pieceSight)
 
 def twoPlayerMode(board):
     clock = game.time.Clock()

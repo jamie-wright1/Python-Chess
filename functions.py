@@ -1,22 +1,9 @@
 import pieces as pieces
 from icecream import ic
+from collections import namedtuple
 
-class move:
-    
-    def __init__(self, startPosition = -1, movePosition = -1, pieceMoving = -1, pieceTaken = -1, isTake = False, colorOfMover = -1, isCastle = False, isPromotion = False):
-        self.startPosition = startPosition
-        self.movePosition = movePosition
+Move = namedtuple('Move', ['startPosition', 'movePosition'])
 
-        self.pieceMoving = pieceMoving
-
-        self.pieceTaken = pieceTaken
-        self.isTake = isTake
-        
-        self.colorOfMover = colorOfMover
-
-        self.isCastle = isCastle
-
-        self.isPromotion = isPromotion
 
 class allFuncs:
 
@@ -39,70 +26,60 @@ class allFuncs:
 
     @staticmethod
     def PieceSight(piece, loc, board):
-        if piece > 16:
-            color = 16
-        else:
-            color = 8
-
-        vision = set()
         check = loc
+        moves = list()
 
         match piece:
             case (10 | 18):#Knights
-                
+                #Maybe fix?
                 if loc % 8 > 1:
                     if loc > 7:
-                        vision.add(move(loc, loc -10, piece, board[loc - 10], False, color))
+                        moves.append(Move(loc, loc - 10))
                     if loc < 56:
-                        vision.add(move(loc, loc + 6, piece, board[loc + 6], False, color))
-
+                        moves.append(Move(loc, loc + 6))
                 if loc % 8 < 6:
                     if loc > 7:
-                        vision.add(move(loc, loc - 6, piece, board[loc - 6], False, color))
+                        moves.append(Move(loc, loc - 6))
                     if loc < 56:
-                        vision.add(move(loc, loc + 10, piece, board[loc + 10], False, color))
-
+                        moves.append(Move(loc, loc + 10))
                 if loc > 15:
                     if loc % 8 > 0:
-                        vision.add(move(loc, loc - 17, piece, board[loc - 17], False, color))
+                        moves.append(Move(loc, loc - 17))
                     if loc % 8 < 7:
-                        vision.add(move(loc, loc - 15, piece, board[loc - 15], False, color))
-
-
+                        moves.append(Move(loc, loc - 15))
                 if loc < 48:
                     if loc % 8 > 0:
-                        vision.add(move(loc, loc + 15, piece, board[loc + 15], False, color))
+                        moves.append(Move(loc, loc + 15))
                     if loc % 8 < 7:
-                        vision.add(move(loc, loc + 17, piece, board[loc + 17], False, color))
+                        moves.append(Move(loc, loc + 17))
 
-                visionCopy = vision.copy()
+                movesCopy =  moves.copy()
                 
-                for moveInfo in visionCopy:
-                    if piece == 10 and moveInfo.pieceTaken < 16 and moveInfo.pieceTaken > 0:
-                        vision.remove(moveInfo)
+                for move in movesCopy:
+                    if piece == 10 and board[move.movePosition] < 16 and board[move.movePosition] > 0:
+                        moves.remove(move)
                         
-                    if piece == 18 and moveInfo.pieceTaken > 16:
-                        vision.remove(moveInfo)                
+                    if piece == 18 and board[move.movePosition] > 16:
+                        moves.remove(move)                
 
             case (12 | 20):#Rooks
                 directions = (1, -1, 8, -8)
 
                 for movement in directions:
                     check = loc
-
                     check += movement
+                    
                     while (0 <= check <= 63 and board[check] == 0):
-                        if movement == -1 and check % 8 == 7:
-                            check = 64
-                        elif movement == 1 and check % 8 == 0:
+                        if (movement == -1 and check % 8 == 7) or (movement == 1 and check % 8 == 0):
                             check = 64
                         else:
-                            vision.add(move(loc, check, piece, 0, False, color))
+                            moves.append(Move(loc, check))
                             check += movement
 
+                    #To fix
                     if 0 <= check <= 63 and ((movement == -1 and check % 8 != 7) or (movement == 1 and check % 8 != 0) or (movement == 8 or movement == -8)):
                         if (piece == 12 and board[check] > 16) or (piece == 20 and board[check] < 16):
-                            vision.add(move(loc, check, piece, board[check], False, color))
+                            moves.append(Move(loc, check))
 
             case (11 | 19):#Bishops
                 directions = (7, -7, 9, -9)
@@ -112,56 +89,43 @@ class allFuncs:
 
                     check += movement
                     while (0 <= check <= 63 and board[check] == 0):
-                        if (movement == -9 or movement == 7) and check % 8 == 7:
-                            check = 64
-                        elif (movement == -7 or movement == 9) and check % 8 == 0:
+                        if ((movement == -9 or movement == 7) and check % 8 == 7) or ((movement == -7 or movement == 9) and check % 8 == 0):
                             check = 64
                         else:
-                            vision.add(move(loc, check, piece, 0, False, color))
+                            moves.append(Move(loc, check))
                             check += movement
 
                     if (0 <= check <= 63) and (((movement == 9 or movement == -7) and check % 8 != 0) or (movement !=9 and movement != -7)) and (((movement == 7 or movement == -9) and check % 8 != 7) or (movement != 7 and movement !=-9)):
                         if (piece == 11 and board[check] > 16) or (piece == 19 and board[check] < 16):
-                            vision.add(move(loc, check, piece, board[check], False, color))
+                           moves.append(Move(loc, check))
 
             case (9):#Black Pawn
-             
-                if board[loc - 8] == 0:
-                    moveInfo = move(loc, loc - 8, piece, 0, False, color)
-                    moveInfo.isPromotion = allFuncs.pawnPromotion(moveInfo)
-                    vision.add(moveInfo)
+                if loc > 7 and board[loc - 8] == 0:
+                    moves.append(Move(loc, loc - 8))
+                    #moveInfo.isPromotion = allFuncs.pawnPromotion(moveInfo)
                     if (loc > 47 and board[loc - 16] == 0):
-                        vision.add(move(loc, loc - 16, piece, 0, False, color))
-
-                if piece == 9 and oldMove.pieceMoving == 17 and oldMove.movePosition - oldMove.startPosition == 16:
-                    True
+                        moves.append(Move(loc, loc - 16))
    
                 if (loc > 7 and loc % 8 !=7 and board[loc - 7] > 16):
-                    moveInfo = move(loc, loc - 7, piece, board[loc - 7], False, color)
-                    moveInfo.isPromotion = allFuncs.pawnPromotion(moveInfo)
-                    vision.add(moveInfo)
+                    moves.append(Move(loc, loc - 7))
+                    #moveInfo.isPromotion = allFuncs.pawnPromotion(moveInfo)
                 if (loc > 7 and loc % 8 != 0 and board[loc - 9] > 16):
-                    moveInfo = move(loc, loc - 9, piece, board[loc - 9], False, color)
-                    moveInfo.isPromotion = allFuncs.pawnPromotion(moveInfo)
-                    vision.add(moveInfo)
+                    moves.append(Move(loc, loc - 9))
+                    #moveInfo.isPromotion = allFuncs.pawnPromotion(moveInfo)
 
             case (17):#White pawn
-         
-                if board[loc + 8] == 0:       
-                    moveInfo = move(loc, loc + 8, piece, 0, False, color)
-                    moveInfo.isPromotion = allFuncs.pawnPromotion(moveInfo)
-                    vision.add(moveInfo)
+                if loc < 56 and board[loc + 8] == 0:
+                    moves.append(Move(loc, loc + 8))
+                    #moveInfo.isPromotion = allFuncs.pawnPromotion(moveInfo)
                     if (loc < 16 and board[loc + 16] == 0):
-                        vision.add(move(loc, loc + 16, piece, 0, False, color))
+                        moves.append(Move(loc, loc + 16))
 
-                if (loc < 56 and loc % 8 != 0 and (16 > board[loc + 7] > 0)):
-                    moveInfo = move(loc, loc + 7, piece, board[loc + 7], False, color)
-                    moveInfo.isPromotion = allFuncs.pawnPromotion(moveInfo)
-                    vision.add(moveInfo)
-                if (loc < 56 and loc % 8 != 7 and (0 < board[loc + 9] < 16)):
-                    moveInfo = move(loc, loc + 9, piece, board[loc+9], False, color)
-                    moveInfo.isPromotion = allFuncs.pawnPromotion(moveInfo)
-                    vision.add(moveInfo)
+                if (loc < 56 and loc % 8 != 0 and 0 < board[loc + 7] < 16):
+                    moves.append(Move(loc, loc + 7))
+                    #moveInfo.isPromotion = allFuncs.pawnPromotion(moveInfo)
+                if (loc < 56 and loc % 8 != 7 and 0 < board[loc + 9] < 16):
+                    moves.append(Move(loc, loc + 9))
+                    #moveInfo.isPromotion = allFuncs.pawnPromotion(moveInfo)
 
             case (13 | 21):#Queens
                 #Rook check half
@@ -169,20 +133,19 @@ class allFuncs:
 
                 for movement in directions:
                     check = loc
-
                     check += movement
+                    
                     while (0 <= check <= 63 and board[check] == 0):
-                        if movement == -1 and check % 8 == 7:
-                            check = 64
-                        elif movement == 1 and check % 8 == 0:
+                        if (movement == -1 and check % 8 == 7) or (movement == 1 and check % 8 == 0):
                             check = 64
                         else:
-                            vision.add(move(loc, check, piece, 0, False, color))
+                            moves.append(Move(loc, check))
                             check += movement
 
+                    #To fix
                     if 0 <= check <= 63 and ((movement == -1 and check % 8 != 7) or (movement == 1 and check % 8 != 0) or (movement == 8 or movement == -8)):
                         if (piece == 13 and board[check] > 16) or (piece == 21 and board[check] < 16):
-                            vision.add(move(loc, check, piece, board[check], False, color))
+                            moves.append(Move(loc, check))
 
                 #Bishop Check Half
                 directions = (7, -7, 9, -9)
@@ -192,17 +155,15 @@ class allFuncs:
 
                     check += movement
                     while (0 <= check <= 63 and board[check] == 0):
-                        if (movement == -9 or movement == 7) and check % 8 == 7:
-                            check = 64
-                        elif (movement == -7 or movement == 9) and check % 8 == 0:
+                        if ((movement == -9 or movement == 7) and check % 8 == 7) or ((movement == -7 or movement == 9) and check % 8 == 0):
                             check = 64
                         else:
-                            vision.add(move(loc, check, piece, 0, False, color))
+                            moves.append(Move(loc, check))
                             check += movement
 
                     if (0 <= check <= 63) and (((movement == 9 or movement == -7) and check % 8 != 0) or (movement !=9 and movement != -7)) and (((movement == 7 or movement == -9) and check % 8 != 7) or (movement != 7 and movement !=-9)):
                         if (piece == 13 and board[check] > 16) or (piece == 21 and board[check] < 16):
-                            vision.add(move(loc, check, piece, board[check], False, color))
+                           moves.append(Move(loc, check))
 
             case (14 | 22):#Kings
                 for i in range (-1, 2):
@@ -210,58 +171,54 @@ class allFuncs:
                         check = (loc + g + 8*i)
                         if (loc % 8 != 0 or g > -1) and (loc % 8 != 7 or g < 1):
                             if check <= 63 and check >= 0 and (i!=0 or g!=0):
-                                if board[check] == 0:
-                                    vision.add(move(loc, check, piece, board[check], False, color))
-                                elif piece == 14 and board[check] > 16:
-                                    vision.add(move(loc, check, piece, board[check], False, color))
-                                elif piece == 22 and board[check] < 16:
-                                    vision.add(move(loc, check, piece, board[check], False, color))
+                                if board[check] == 0 or (piece == 14 and board[check] > 16) or (piece == 22 and board[check] < 16):
+                                    moves.append(Move(loc, check))
            
             case _:
-                vision = set()
+                moves = list()
 
-        return vision
+        return moves
 
     @staticmethod
     def validMoves(piece, loc, board):
-        vision = allFuncs.PieceSight(piece, loc, board)
+        possibleMoves = allFuncs.PieceSight(piece, loc, board)
        
-        newVision = vision.copy()
+        movesCopy = possibleMoves.copy()
 
-        for moveInfo in newVision:
+        for move in movesCopy:
             boardToCheck = board[::]
-            boardToCheck[moveInfo.movePosition] = piece
-            boardToCheck[moveInfo.startPosition] = 0
+            boardToCheck[move.movePosition] = piece
+            boardToCheck[loc] = 0
             
-            if  allFuncs.IsInCheck(moveInfo.pieceMoving, boardToCheck) == True:
-                newSquare = moveInfo
-                vision.remove(newSquare)
+            if  allFuncs.IsInCheck(piece, boardToCheck) == True:
+                moveCopy = move
+                possibleMoves.remove(moveCopy)
 
-        return vision
+        return possibleMoves
     
     @staticmethod
     def colorSight(board, color):
-        ultraVision = set()
+        ultraVision = list()
         
         for i, square in enumerate(board):
-            pieceVision = set()
             if (((square > 0 and square < 16 and color == 8) or (square > 16 and color == 16))):
-                pieceVision = allFuncs.validMoves(square, i, board)
+                pieceVision = (allFuncs.validMoves(square, i, board))
 
-                ultraVision = ultraVision | pieceVision
+                if pieceVision:
+                    ultraVision += pieceVision
 
         return ultraVision
 
     @staticmethod
     def potentialSight(board, color):
-        ultraVision = set()
+        ultraVision = list()
 
         for i, square in enumerate(board):
-            pieceVision = set()
             if (((square > 0 and square < 16 and color == 8) or (square > 16 and color == 16))):
-                pieceVision = allFuncs.PieceSight(square, i, board)
+                pieceVision = (allFuncs.PieceSight(square, i, board))
 
-                ultraVision = ultraVision | pieceVision
+                if pieceVision:
+                    ultraVision += pieceVision
 
         return ultraVision
     
@@ -270,18 +227,15 @@ class allFuncs:
         check = False
         #Checking the location of the king for board vision
         if king < 16:
-            moves = allFuncs.potentialSight(board, 16)
-            for moveInfo in moves:
-
-                if moveInfo.pieceTaken == 14:
+            pieceSights = allFuncs.potentialSight(board, 16)
+            for move in pieceSights:
+                if board[move.movePosition] == 14:
                     check = True
-
         if king > 16:
-            moves = allFuncs.potentialSight(board, 8)
-            for moveInfo in moves:
-
-                if moveInfo.pieceTaken == 22:
-                    check = True
+            pieceSights = allFuncs.potentialSight(board, 8)
+            for move in pieceSights:
+                    if board[move.movePosition] == 22:
+                        check = True
 
         return check
     
@@ -289,7 +243,20 @@ class allFuncs:
     def IsInCheckmate(color, board):
         possibleMoves = allFuncs.colorSight(board, color)
 
-        if not possibleMoves:
+        return not possibleMoves
+    
+    @staticmethod
+    def gameOver(board):
+        if allFuncs.IsInCheckmate(8, board) or allFuncs.IsInCheckmate(16, board):
             return True
         else:
             return False
+        
+    @staticmethod
+    def utility(board):
+        if allFuncs.IsInCheckmate(8, board):
+            return 1000
+        elif allFuncs.IsInCheckmate(16, board):
+            return -1000
+        else:
+            return 0

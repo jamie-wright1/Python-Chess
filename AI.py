@@ -2,6 +2,7 @@ import functions as funcs
 import random as rand
 import boardFunctions
 from icecream import ic
+import time
 
 class parameters:
     
@@ -29,14 +30,17 @@ class parameters:
 
     goodTradeValue = (3, 3, 3)
 
-    def towardsMiddle(move):
-        distance = move.movePosition % 8 - 3.5
-        distance2 = move.startPosition % 8 - 3.5
+    def towardsMiddle(board):
+        favorability = 0
 
-        if abs(distance) < abs(distance2) or abs(distance) < 2.5:
-            return True
-        else:
-            return False
+        for square in board:
+            if square & 8 > 2 and square & 8 < 6:
+                if square > 16:
+                    favorability += 5
+                elif square > 0:
+                    favorability -= 5
+
+        return favorability
             
         
     towardsMiddleValue = (4, 4, 3)
@@ -118,66 +122,45 @@ class parameters:
         return value
     
 
-    def calculateFavorability(move, board, phase, color):
+    def kingStayPut(board):
+        for i, square in enumerate(board):
+            if square == 14:
+                if i > 15:
+                    return 3
+            elif square == 22:
+                if i < 48:
+                    return -3
+                
+        return 0
+
+    def pawnsAdvanced(board):
         favorability = 0
 
-        '''if parameters.allowsTake(move, board, color) == True:
-            newBoard = board[::]
-            newBoard[move.startPosition] = 0
-            newBoard[move.movePosition] = 0
+        for i, square in enumerate(board):
+            if square == 9:
+                favorability -= (i / 8)/2
+            elif square == 17:
+                favorability += (7 - i / 8)/2
 
-            if move.pieceTaken != 0:
-                value = parameters.goodTrade(move)
-                value = value*parameters.goodTradeValue[phase]
-                favorability += value
-            elif move.movePosition in funcs.allFuncs.potentialSight(newBoard, color):
-                True
-            else:
-                value = parameters.calculatePieceValue(move.pieceMoving)
-                value = value*parameters.allowsTakeValue[phase]
-                favorability += value
-        elif move.pieceTaken != 0:
-            value = parameters.calculatePieceValue(move.pieceTaken)
-            value = value*parameters.undefendedTakeValue[phase]
-            favorability += value'''
-
-        '''for i, piece in enumerate(board):
-            if 0 < piece - color < 8:
-                newMove = funcs.move(i, i, piece, piece, False, color)
-                if parameters.allowsTake(newMove, board, color) == True:
-                    newBoard = board[::]
-                    newBoard[newMove.movePosition] = 0
-                    if newMove.movePosition in funcs.allFuncs.potentialSight(board, color):
-                 
-                        value = parameters.goodTrade(move)
-                        value = value*parameters.goodTradeValue[phase]
-                        favorability += value
-                    else:
-                        value = parameters.calculatePieceValue(move.pieceMoving)
-                        value = value*parameters.allowsTakeValue[phase]
-                        favorability += value'''
+        return favorability
 
 
-        if favorability > 0 and parameters.putsInCheck(move, board) == True:
-            favorability += parameters.putsInCheckValue[phase]
+    def calculateFavorability(board):
+        favorability = 0
 
-        if parameters.towardsMiddle(move) == True:
-            favorability += parameters.towardsMiddleValue[phase]
+        favorability+= simpleEvaluation(board)
+        favorability+= parameters.towardsMiddle(board)
+        favorability+= parameters.kingStayPut(board)
+        favorability+= parameters.pawnsAdvanced(board)
+
+        if funcs.allFuncs.IsInCheck(8, board) == True:
+            favorability += 20
+
+        if funcs.allFuncs.IsInCheck(16, board) == True:
+            favorability -= 20
 
         #if parameters.defended(move, board) == True:
          #   favorability += parameters.defendedValue[phase]
-
-        if parameters.kingMove(move) == True:
-            favorability += parameters.kingMoveValue[phase]
-
-        if parameters.pawnPush(move) == True:
-            favorability += parameters.pawnPushValue[phase]
-
-        if parameters.pawnPromotion(move) == True:
-            favorability += parameters.pawnPromotionValue[phase]
-
-        if parameters.putsInCheckmate(move, board) == True:
-            favorability += parameters.putsInCheckMateValue[phase]
 
         return favorability
 
@@ -195,7 +178,8 @@ def simpleEvaluation(board):
     return totalEval
 
 def AIMove(board, turn, depth, maxDepth):
-    color= int
+    begin = time.time()
+
     if turn % 2 == 0:
         color = 8
     else:
@@ -207,65 +191,116 @@ def AIMove(board, turn, depth, maxDepth):
     if turn > 15:
         phase = 2
 
-    validMoves = set()
+    validMoves = list()
 
     for i, square in enumerate(board):
         if 0 < square < 16:
             moves = funcs.allFuncs.validMoves(square, i, board)
-        else:
-            moves = set()
-        validMoves = validMoves | moves
+            validMoves += moves
 
 
-    best = 0
-    bestMove = set()
-    bestMove.add(funcs.move())
+    bestMove = minimax(board, validMoves, maxDepth)
 
-    #if depth + 1 == maxDepth:
-    for move in validMoves:
-        score = parameters.calculateFavorability(move, board, phase, color)
-        #score = score*rand.randrange(8, 11)
-        if score > best:
-            best = score
-            bestMove = {move}
-        elif score == best:
-            bestMove.add(move)
+    executeAIMove(board, bestMove)
 
-    """else:
-        if color == 8:
-            bestEval = 500
-        if color == 16:
-            bestEval = -500
-        for move in validMoves:
-            AIMoves(board, move)
-            eval = AIMove(board, turn+1, depth+1, maxDepth)
-            board[move.startPosition] = move.pieceMoving
-            board[move.movePosition] = move.pieceTaken
+    end = time.time()
+    print (end - begin)
 
-            if (color == 8 and eval < bestEval) or (color == 16 and eval > bestEval):
-                bestEval = eval
-                bestMove = [move]
-            elif eval == bestEval:
-                bestMove.append(move)
-
-        bestMove = rand.choice(bestMove)"""
-    
-    bestMove = rand.sample(tuple(bestMove), 1)
-    bestMove = bestMove[0]
-    good = parameters.calculateFavorability(bestMove, board, phase, color)
-    
-    AIMoves(board, bestMove)
-
-    if depth > 0:
-        eval = simpleEvaluation(board)
-        board[bestMove.startPosition] = bestMove.pieceMoving
-        board[bestMove.movePosition] = bestMove.pieceTaken
-        return eval
-
-
-def AIMoves(board, moveToMake):
-    if funcs.allFuncs.pawnPromotion(moveToMake) == True:
-        board[moveToMake.movePosition] = moveToMake.pieceMoving + 4
-    else:
-        board[moveToMake.movePosition] = moveToMake.pieceMoving
+def executeAIMove(board, moveToMake):
+    #if funcs.allFuncs.pawnPromotion(moveToMake) == True:
+        #should only have one element
+        #for move in moveToMake.moveInfos:
+         #   board[move[0]] = moveToMake.pieceMoving + 4
+    #else:
+    board[moveToMake.movePosition] = board[moveToMake.starPosition]
     board[moveToMake.startPosition] = 0
+
+def minimax(board, possibleMoves, maxDepth):
+    moveToPlay = tuple()
+    best = 99
+
+    possibleMoves = funcs.allFuncs.colorSight(board, 8)
+    ic(possibleMoves)
+    newOrder = moveOrdering(board, possibleMoves, 16)
+    ic(newOrder)
+    
+    
+    for move in possibleMoves:
+        boardCopy = board[::]
+        boardCopy = boardFunctions.boardFuncs.updateBoard(move, board[move.startPosition], move.startPosition, boardCopy)
+
+        v = max(boardCopy, best, 0, maxDepth)
+
+        if v < best:
+            best = v
+            moveToPlay = move
+
+    return moveToPlay
+
+def max(board, prune, depth, maxDepth):
+    if funcs.allFuncs.gameOver(board) == True:
+        return funcs.allFuncs.utility(board)
+    
+    if depth == maxDepth:
+        return parameters.calculateFavorability(board)
+    
+    best = -99
+
+    possibleMoves = funcs.allFuncs.colorSight(board, 16)
+    
+    for move in possibleMoves:
+        boardCopy = board[::]
+        boardCopy = boardFunctions.boardFuncs.updateBoard(move, board[move.startPosition], move.startPosition, boardCopy)
+
+        v = min(boardCopy, best, depth+1, maxDepth)
+
+        if v >= prune:
+            return v
+        
+        if v > best:
+            best = v
+        
+    return best
+
+def min(board, prune, depth, maxDepth):
+    if funcs.allFuncs.gameOver(board) == True:
+        return funcs.allFuncs.utility(board)
+    
+
+    if depth == maxDepth:
+        return parameters.calculateFavorability(board)
+
+    best = 99
+        
+    possibleMoves = funcs.allFuncs.colorSight(board, 8)
+
+
+    for move in possibleMoves:
+
+        boardCopy = board[::]
+        boardCopy = boardFunctions.boardFuncs.updateBoard(move, board[move.startPosition], move.startPosition, boardCopy)
+
+        v = max(boardCopy, best, depth+1, maxDepth)
+
+        if v <= prune:
+            return v
+        
+        if v < best:
+            best = v
+
+    return best
+
+def moveOrdering(board, possibleMoves, color):
+    newList = []
+
+    for i in range(6, 0, -1):
+        for move in possibleMoves:
+                if board[move.movePosition] == (i + color):
+                    ic("Appended")
+                    newList.append(move)
+
+    for move in possibleMoves:
+        if board[move.movePosition] == 0:
+            newList.append(move)
+    
+    return newList

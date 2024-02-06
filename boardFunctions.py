@@ -58,9 +58,9 @@ class boardFuncs:
     def boardToFen(board):
         True
 
-    def updateBoard(move, board):
-        board[move.movePosition] = move.pieceMoving
-        board[move.startPosition] = 0
+    def updateBoard(move, piece, position, board):
+        board[move[0]] = piece
+        board[position] = 0
         
         return board
     

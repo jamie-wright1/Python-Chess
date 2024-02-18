@@ -18,22 +18,18 @@ class parameters:
         return favorability
             
     def calculatePieceValue(piece):
-        value = int
         match piece:
             case 9 | 17:
-                value = 1
-            case 10 | 18 :
-                value = 3
-            case 11 | 19:
-                value = 3
+                return 1
+            case 10 | 18 | 11 | 19 :
+                return 3
             case 12 | 20:
-                value = 5
+                return 5
             case 13 | 21:
-                value = 9
+                return 9
             case _:
-                value = 0
+                return 0
 
-        return value
     
     def kingStayPut(board):
         for i, square in enumerate(board):
@@ -51,12 +47,23 @@ class parameters:
 
         for i, square in enumerate(board):
             if square == 9:
-                favorability -= (i / 8)/2
+                favorability -= int(i/8)
             elif square == 17:
-                favorability += (7 - i / 8)/2
+                favorability += int((7 - i/8))
 
         return favorability
 
+    def checks(board):
+        favorability = 0
+
+        if funcs.IsInCheck(8, board) == True:
+            favorability += 20
+
+        if funcs.IsInCheck(16, board) == True:
+            favorability -= 20
+
+        return favorability
+    
     def calculateFavorability(board):
         favorability = 0
 
@@ -64,15 +71,17 @@ class parameters:
         favorability+= parameters.towardsMiddle(board)
         favorability+= parameters.kingStayPut(board)
         favorability+= parameters.pawnsAdvanced(board)
+        favorability+= parameters.checks(board)
 
-        if funcs.allFuncs.IsInCheck(8, board) == True:
+        if funcs.IsInCheck(8, board) == True:
             favorability += 20
 
-        if funcs.allFuncs.IsInCheck(16, board) == True:
+        if funcs.IsInCheck(16, board) == True:
             favorability -= 20
 
-        return favorability
+        return favorability*random.randrange(7, 10)
 
+#Adds up the value of every piece on the board
 def simpleEvaluation(board):
     whiteValue = blackValue = 0
 
@@ -86,7 +95,7 @@ def simpleEvaluation(board):
 
     return totalEval
 
-def AIMove(board, turn, depth, maxDepth):
+def AIMove(board, turn, depth):
     begin = time.time()
 
     if turn % 2 == 0:
@@ -102,34 +111,22 @@ def AIMove(board, turn, depth, maxDepth):
 
     validMoves = list()
 
-    for i, square in enumerate(board):
-        if 0 < square < 16:
-            moves = funcs.allFuncs.validMoves(square, i, board)
-            validMoves += moves
+    validMoves = funcs.colorSight(board, color)
 
+    
+    bestMove = minimax(board, validMoves, depth)
 
-    bestMove = minimax(board, validMoves, maxDepth)
-
-    executeAIMove(board, bestMove)
+    boardFunctions.boardFuncs.updateBoard(bestMove, board)
 
     end = time.time()
-    print (end - begin)
-
-def executeAIMove(board, moveToMake):
-    #if funcs.allFuncs.pawnPromotion(moveToMake) == True:
-        #should only have one element
-        #for move in moveToMake.moveInfos:
-         #   board[move[0]] = moveToMake.pieceMoving + 4
-    #else:
-    board[moveToMake.movePosition] = board[moveToMake.startPosition]
-    board[moveToMake.startPosition] = 0
+    print(end-begin)
 
 def minimax(board, possibleMoves, depth):
     bestMove = None
-    alpha, beta = -99, 99
+    alpha, beta = -999, 999
 
-    possibleMoves = funcs.allFuncs.colorSight(board, 8)
-    newOrder = moveOrdering(board, possibleMoves, 16)
+    possibleMoves = funcs.colorSight(board, 8)
+    newOrder = moveOrdering(board, possibleMoves)
     
     
     for move in newOrder:
@@ -147,14 +144,14 @@ def minimax(board, possibleMoves, depth):
     return bestMove
 
 def max(board, alpha, beta, depth):
-    if funcs.allFuncs.gameOver(board) == True:
-        return funcs.allFuncs.utility(board)
+    if funcs.gameOver(board) == True:
+        return funcs.utility(board)
     
     if depth == 0:
         return parameters.calculateFavorability(board)
 
-    possibleMoves = funcs.allFuncs.colorSight(board, 16)
-    newOrder = moveOrdering(board, possibleMoves, 8)
+    possibleMoves = funcs.colorSight(board, 16)
+    newOrder = moveOrdering(board, possibleMoves)
     
     for move in newOrder:
         savePiece = boardFunctions.boardFuncs.updateBoard(move, board)
@@ -170,16 +167,16 @@ def max(board, alpha, beta, depth):
     return alpha
 
 def min(board, alpha, beta, depth):
-    if funcs.allFuncs.gameOver(board) == True:
-        return funcs.allFuncs.utility(board)
+    if funcs.gameOver(board) == True:
+        return funcs.utility(board)
     
 
     if depth == 0:
         return parameters.calculateFavorability(board)
 
         
-    possibleMoves = funcs.allFuncs.colorSight(board, 8)
-    newOrder = moveOrdering(board, possibleMoves, 16)
+    possibleMoves = funcs.colorSight(board, 8)
+    newOrder = moveOrdering(board, possibleMoves)
 
     for move in newOrder:
         savePiece = boardFunctions.boardFuncs.updateBoard(move, board)
@@ -194,16 +191,18 @@ def min(board, alpha, beta, depth):
 
     return beta
 
-def moveOrdering(board, possibleMoves, color):
-    newList = []
-
-    for i in range(6, 0, -1):
-        for move in possibleMoves:
-                if board[move.movePosition] == (i + color):
-                    newList.append(move)
-
-    for move in possibleMoves:
-        if board[move.movePosition] == 0:
-            newList.append(move)
+def moveOrdering(board, possibleMoves):
     
-    return newList
+    scores = [""]*len(possibleMoves)
+
+    for i, move in enumerate(possibleMoves):
+        pieceMoving, pieceTaken = board[move[0]], board[move[1]]
+
+        if pieceTaken != 0:
+            scores[i] = (parameters.calculatePieceValue(pieceTaken) - parameters.calculatePieceValue(pieceMoving))
+        else:
+            scores[i] = 0
+
+    sortedMoves = [x for _, x in sorted(zip(scores, possibleMoves), reverse=True)]
+
+    return sortedMoves

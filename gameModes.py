@@ -2,9 +2,9 @@ import pygame as game
 import functions as func
 import ui
 import AI
-from icecream import ic
+import pieces
 
-funcs = func.allFuncs
+funcs = func
 
 WHITE, BLACK = 16, 8
 
@@ -33,7 +33,13 @@ def turn(color, board):
 
                     if 0 < pieceMoving - color <= 6:
                         mouseDown = True
-                        pieceSight = funcs.validMoves(pieceMoving, startPosition, board)
+                        if pieceMoving < 16:
+                            pins = func.findPins(board, 16)
+                            potentialSight = funcs.possibleAttacksOnKing(board, 16)
+                        else:
+                            pins = func.findPins(board, 8)
+                            potentialSight = funcs.possibleAttacksOnKing(board, 8)
+                        pieceSight = funcs.validMoves(pieceMoving, startPosition, board, pins, potentialSight)
                         board[startPosition] = 0
                     else:
                         startPosition = -1
@@ -44,9 +50,10 @@ def turn(color, board):
 
                 for move in pieceSight:
                     if placeCoor == move.movePosition:
-                        #if move.isPromotion == True:
-                            #board[placeCoor] = pieceInfo.pieceMoving + 4
-                        board[placeCoor] = pieceMoving
+                        if pieces.pawnPromotion(pieceMoving, placeCoor) == True:
+                            board[placeCoor] = pieceMoving + 4
+                        else:
+                            board[placeCoor] = pieceMoving
 
                         startPosition = -1
                         pieceMoving= -1
@@ -76,16 +83,16 @@ def twoPlayerMode(board):
     while checkmate == False:
         board = turn(WHITE, board)
 
-        if func.allFuncs.IsInCheckmate(BLACK, board) == True:
+        if func.IsInCheckmate(BLACK, board) == True:
             checkmate = True
             continue
 
         board = turn(BLACK, board)
 
-        if func.allFuncs.IsInCheckmate(WHITE, board) == True:
+        if func.IsInCheckmate(WHITE, board) == True:
             checkmate = True
 
-    for i in range(60):
+    for _ in range(60):
         clock.tick(60)
         ui.endGame(ui.WIN, 8)
 
@@ -97,15 +104,15 @@ def AIMode(board):
     while checkmate == False:
         turn(WHITE, board)
 
-        if func.allFuncs.IsInCheckmate(BLACK, board) == True:
+        if func.IsInCheckmate(BLACK, board) == True:
             checkmate = True
             continue
         
         turnsPlayed+=1
 
-        AI.AIMove(board, turnsPlayed, 0, 3)
+        AI.AIMove(board, turnsPlayed, 3)
 
-        if func.allFuncs.IsInCheckmate(WHITE, board) == True:
+        if func.IsInCheckmate(WHITE, board) == True:
             checkmate = True
         
         turnsPlayed += 1

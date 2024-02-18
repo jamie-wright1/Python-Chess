@@ -5,8 +5,6 @@ import functions as funcs
 import ui as ui
 import gameModes as mode
 
-
-funcs = funcs.allFuncs
 board = boardFunctions.boardFuncs
 
 game.display.set_caption("Chess")

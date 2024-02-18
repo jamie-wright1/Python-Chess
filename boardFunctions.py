@@ -1,6 +1,4 @@
-import pygame as game
 import pieces
-from icecream import ic
 
 class boardFuncs:
     startFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
@@ -61,7 +59,11 @@ class boardFuncs:
     def updateBoard(move, board):
         savePiece = board[move[1]]
 
-        board[move[1]] = board[move[0]]
+        if pieces.pawnPromotion(move, board) == True:
+            board[move[1]] = board[move[0]] + 4
+        else:
+            board[move[1]] = board[move[0]]
+
         board[move[0]] = 0
         
         return savePiece
@@ -73,7 +75,7 @@ class boardFuncs:
     def placePieces():
         board = []
 
-        for i in range(64):
+        for _ in range(64):
             board.append(0)
             
         boardFuncs.fenToBoard(boardFuncs.startFen, board)

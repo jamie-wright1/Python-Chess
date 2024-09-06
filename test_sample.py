@@ -29,4 +29,3 @@ def test():
     attack = [0, 0, 0, 5, 0, 0, 0, 0]
     attack.pop()
     assert(all(piece == 0 for piece in attack))
-    

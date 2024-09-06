@@ -29,8 +29,7 @@ class parameters:
                 return 9
             case _:
                 return 0
-
-    
+  
     def kingStayPut(board):
         for i, square in enumerate(board):
             if square == 14:
@@ -47,9 +46,9 @@ class parameters:
 
         for i, square in enumerate(board):
             if square == 9:
-                favorability -= int(i/8)
+                favorability -= int(7-i/8)
             elif square == 17:
-                favorability += int((7 - i/8))
+                favorability += int(i/8)
 
         return favorability
 
@@ -79,7 +78,7 @@ class parameters:
         if funcs.IsInCheck(16, board) == True:
             favorability -= 20
 
-        return favorability*random.randrange(7, 10)
+        return favorability*random.randrange(8, 10)
 
 #Adds up the value of every piece on the board
 def simpleEvaluation(board):

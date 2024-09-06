@@ -7,7 +7,7 @@ Move = namedtuple('Move', ['startPosition', 'movePosition'])
 def PieceSight(piece, loc, board, potential = False):
     match piece:
         case (10 | 18):#Knights
-            moves = knightSight(piece, loc, board)
+            moves = knightSight(piece, loc, board, potential)
 
         case (12 | 20):#Rooks
             moves = rookSight(piece, loc, board, potential)
@@ -40,6 +40,7 @@ def validMoves(piece, loc, board, pins, potentialSight):
 
 
     pinsCopy = copy.deepcopy(pins)
+
     for attack in pinsCopy:
         if len(attack) == 1:
             #Must take if attacking piece next to king
@@ -140,7 +141,7 @@ def utility(board):
 
 #########################
 ##Individual Piece Sights
-def knightSight(piece, loc, board):
+def knightSight(piece, loc, board, potential = False):
     moves = []
 
     if loc % 8 > 1:
@@ -165,9 +166,12 @@ def knightSight(piece, loc, board):
             moves.append(Move(loc, loc + 17))
 
     movesCopy =  moves.copy()
+
+    if potential:
+        return moves
                 
     for move in movesCopy:
-        if piece == 10 and board[move.movePosition] < 16 and board[move.movePosition] > 0:
+        if piece == 10 and 0 < board[move.movePosition] < 16:
             moves.remove(move)
                 
         if piece == 18 and board[move.movePosition] > 16:
@@ -188,7 +192,14 @@ def rookSight(piece, loc, board, potential = False):
                 moves.append(Move(loc, check))
                 check += movement
                 distances[i] -= 1
-            elif (piece < 16 and board[check] > 16) or (piece > 16 and board[check] < 16) or potential:
+            elif (piece < 16 and board[check] > 16) or (piece > 16 and board[check] < 16):
+                moves.append(Move(loc, check))
+                if potential and (board[check] == 14 or board[check] == 22) and distances[i] > 1:
+                    check += movement
+                    moves.append(Move(loc, check))
+                    
+                distances[i] = 0
+            elif potential:
                 moves.append(Move(loc, check))
                 distances[i] = 0
             else:
@@ -209,7 +220,14 @@ def bishopSight(piece, loc, board, potential = False):
                 moves.append(Move(loc, check))
                 check += movement
                 distances[i] -= 1
-            elif (piece < 16 and board[check] > 16) or (piece > 16 and board[check] < 16) or potential:
+            elif (piece < 16 and board[check] > 16) or (piece > 16 and board[check] < 16):
+                moves.append(Move(loc, check))
+                if potential and (board[check] == 14 or board[check] == 22) and distances[i] > 1:
+                    check += movement
+                    moves.append(Move(loc, check))
+                    
+                distances[i] = 0
+            elif potential:
                 moves.append(Move(loc, check))
                 distances[i] = 0
             else:
@@ -226,9 +244,9 @@ def pawnSight(piece, loc, board, potential = False):
             if (loc > 47 and board[loc - 16] == 0):
                 moves.append(Move(loc, loc - 16))
 
-        if (loc > 7 and loc % 8 !=7 and board[loc - 7] > 16):
+        if potential or (loc > 7 and loc % 8 !=7 and board[loc - 7] > 16):
             moves.append(Move(loc, loc - 7))
-        if (loc > 7 and loc % 8 != 0 and board[loc - 9] > 16):
+        if potential or (loc > 7 and loc % 8 != 0 and board[loc - 9] > 16):
             moves.append(Move(loc, loc - 9))
 
     else: #White Pawn
@@ -237,9 +255,9 @@ def pawnSight(piece, loc, board, potential = False):
             if (loc < 16 and board[loc + 16] == 0):
                 moves.append(Move(loc, loc + 16))
 
-        if (loc < 56 and loc % 8 != 0 and 0 < board[loc + 7] < 16):
+        if potential or (loc < 56 and loc % 8 != 0 and 0 < board[loc + 7] < 16):
             moves.append(Move(loc, loc + 7))
-        if (loc < 56 and loc % 8 != 7 and 0 < board[loc + 9] < 16):
+        if potential or (loc < 56 and loc % 8 != 7 and 0 < board[loc + 9] < 16):
             moves.append(Move(loc, loc + 9))
 
     return moves

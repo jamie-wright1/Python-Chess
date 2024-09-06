@@ -37,10 +37,10 @@ def main():
                 if 50 < mouseCoors[0] < 155 and 250 < mouseCoors[1] < 275:
                     mode.AIMode(boardState)
                     end = True
-                elif 50 < event.pos[0] < 190 and 350 < event.pos[1] < 375:
+                elif 50 < mouseCoors[0] < 190 and 350 < mouseCoors[1] < 375:
                     mode.twoPlayerMode(boardState)
                     run = False
-                elif 50 < event.pos[0] < 100 and 450 < event.pos[1] < 475:
+                elif 50 < mouseCoors[1] < 100 and 450 < mouseCoors[1] < 475:
                     run = False
                 
             if event.type == game.QUIT:

@@ -25,7 +25,7 @@ def turn(color, board):
             button = game.mouse.get_pressed()
 
             if button[0] == True:
-                coordinates = event.pos[0], event.pos[1]
+                coordinates = game.mouse.get_pos()
 
                 if mouseDown == False:
                     startPosition = int(coordinates[0]/75 + 1) + 8*(7 - int(coordinates[1]/75)) - 1
@@ -45,7 +45,7 @@ def turn(color, board):
                         startPosition = -1
                         pieceMoving= -1
             elif mouseDown == True:
-                coordinates = (event.pos[0], event.pos[1])
+                coordinates = game.mouse.get_pos()
                 placeCoor = int(coordinates[0]/75 + 1) + 8*(7 - int(coordinates[1]/75)) - 1
 
                 for move in pieceSight:
